@@ -21,6 +21,12 @@ export function SiteHeader() {
           >
             Bookings
           </Link>
+          <Link
+            href="/clients"
+            className="text-foreground/60 transition-colors hover:text-foreground"
+          >
+            Clients
+          </Link>
         </nav>
         <div className="flex items-center justify-end">
           <ModeToggle />

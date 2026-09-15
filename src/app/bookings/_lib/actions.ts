@@ -11,12 +11,18 @@ import { getErrorMessage } from "@/lib/handle-error";
 import { bookingFormSchema, parseBookingFormInput } from "./validations";
 
 const BOOKINGS_PATH = "/bookings";
+const CLIENTS_PATH = "/clients";
+
+function revalidateBookingViews() {
+  revalidatePath(BOOKINGS_PATH);
+  revalidatePath(CLIENTS_PATH);
+}
 
 export async function createBookingAction(input: unknown) {
   try {
     const formData = bookingFormSchema.parse(input);
     await createBooking(parseBookingFormInput(formData));
-    revalidatePath(BOOKINGS_PATH);
+    revalidateBookingViews();
     return { data: null, error: null };
   } catch (err) {
     return { data: null, error: getErrorMessage(err) };
@@ -31,7 +37,7 @@ export async function updateBookingAction(input: unknown & { id: string }) {
     if (!updated) {
       return { data: null, error: "Booking not found" };
     }
-    revalidatePath(BOOKINGS_PATH);
+    revalidateBookingViews();
     return { data: null, error: null };
   } catch (err) {
     return { data: null, error: getErrorMessage(err) };
@@ -44,7 +50,7 @@ export async function deleteBookingAction(input: { id: string }) {
     if (!deleted) {
       return { data: null, error: "Booking not found" };
     }
-    revalidatePath(BOOKINGS_PATH);
+    revalidateBookingViews();
     return { data: null, error: null };
   } catch (err) {
     return { data: null, error: getErrorMessage(err) };

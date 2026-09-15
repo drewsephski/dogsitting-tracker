@@ -25,15 +25,7 @@ export function formatBookingDateTime(date: Date | string | null | undefined) {
   }
 }
 
-export function formatCurrency(amount: number | null | undefined) {
-  if (amount == null) return "—";
-
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-    maximumFractionDigits: 2,
-  }).format(amount);
-}
+export { formatCurrency } from "@/lib/format";
 
 export function formatOptionalNumber(value: number | null | undefined) {
   if (value == null) return "—";

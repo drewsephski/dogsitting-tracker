@@ -38,6 +38,9 @@
   --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
+  --scrollbar-track: transparent;
+  --scrollbar-thumb: oklch(0.75 0 0 / 0.45);
+  --scrollbar-thumb-hover: oklch(0.55 0 0 / 0.65);
 }
 
 .dark {
@@ -73,6 +76,9 @@
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(0.269 0 0);
   --sidebar-ring: oklch(0.439 0 0);
+  --scrollbar-track: transparent;
+  --scrollbar-thumb: oklch(0.55 0 0 / 0.55);
+  --scrollbar-thumb-hover: oklch(0.72 0 0 / 0.75);
 }
 
 @theme inline {
@@ -142,6 +148,39 @@
   }
   body {
     @apply bg-background text-foreground;
+  }
+}
+
+@utility scrollbar-premium {
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+
+  &::-webkit-scrollbar {
+    height: 0.5rem;
+    width: 0.5rem;
+  }
+
+  &::-webkit-scrollbar-track {
+    margin-inline: 0.25rem;
+    background: var(--scrollbar-track);
+    border-radius: 9999px;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    border: 2px solid transparent;
+    background: var(--scrollbar-thumb);
+    background-clip: padding-box;
+    border-radius: 9999px;
+    transition: background-color 150ms ease;
+  }
+
+  &::-webkit-scrollbar-thumb:hover {
+    background: var(--scrollbar-thumb-hover);
+    background-clip: padding-box;
+  }
+
+  &::-webkit-scrollbar-corner {
+    background: transparent;
   }
 }
 
