@@ -2,7 +2,8 @@
 
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport, type ToolUIPart } from "ai";
-import { useCallback } from "react";
+import { useCallback, useLayoutEffect, useMemo } from "react";
+import { useStickToBottomContext } from "use-stick-to-bottom";
 import {
   Conversation,
   ConversationContent,
@@ -185,6 +186,43 @@ interface ChatPanelProps {
   className?: string;
 }
 
+function getMessagesScrollKey(messages: ChatMessage[]): string {
+  return messages
+    .map((message) =>
+      message.parts
+        .map((part) => {
+          if (part.type === "text") {
+            return `t:${part.text.length}`;
+          }
+          if ("state" in part) {
+            return `${part.type}:${String(part.state)}`;
+          }
+          return part.type;
+        })
+        .join(","),
+    )
+    .join("|");
+}
+
+function ConversationAutoScroll({
+  scrollKey,
+  isStreaming,
+}: {
+  scrollKey: string;
+  isStreaming: boolean;
+}) {
+  const { scrollToBottom } = useStickToBottomContext();
+
+  useLayoutEffect(() => {
+    void scrollToBottom({
+      animation: isStreaming ? "smooth" : "smooth",
+      duration: isStreaming ? 250 : 0,
+    });
+  }, [isStreaming, scrollKey, scrollToBottom]);
+
+  return null;
+}
+
 export function ChatPanel({ className }: ChatPanelProps) {
   const { messages, sendMessage, status, error, clearError } =
     useChat<ChatMessage>({
@@ -215,14 +253,18 @@ export function ChatPanel({ className }: ChatPanelProps) {
   );
 
   const showEmptyState = messages.length === 0 && !isBusy;
+  const messagesScrollKey = useMemo(
+    () => getMessagesScrollKey(messages),
+    [messages],
+  );
 
   return (
     <div
-      className={cn("flex h-full min-h-0 flex-col overflow-hidden", className)}
+      className={cn("flex min-h-0 flex-1 flex-col overflow-hidden", className)}
     >
       <Conversation
         aria-label="Chat messages"
-        className="min-h-0 flex-1 overscroll-contain px-4 md:px-6"
+        className="h-0 min-h-0 flex-1 px-4 md:px-6"
       >
         <ConversationContent
           className={cn(
@@ -279,6 +321,12 @@ export function ChatPanel({ className }: ChatPanelProps) {
             </div>
           ) : null}
         </ConversationContent>
+        {!showEmptyState ? (
+          <ConversationAutoScroll
+            isStreaming={status === "streaming"}
+            scrollKey={messagesScrollKey}
+          />
+        ) : null}
         <ConversationScrollButton />
       </Conversation>
 

@@ -64,11 +64,11 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: React.PropsWithChildren) {
   return (
-    <html lang="en" className="min-h-dvh" suppressHydrationWarning>
+    <html lang="en" className="h-dvh" suppressHydrationWarning>
       <head />
       <body
         className={cn(
-          "flex min-h-dvh flex-col bg-background font-sans antialiased",
+          "flex h-dvh max-h-dvh flex-col overflow-hidden bg-background font-sans antialiased",
           fontSans.variable,
           fontMono.variable,
         )}
