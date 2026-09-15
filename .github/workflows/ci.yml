@@ -16,6 +16,8 @@ jobs:
       DATABASE_URL: postgresql://ci:ci@localhost:5432/ci
       OPENROUTER_API_KEY: ci-placeholder
       OPENROUTER_MODEL: openai/gpt-4o-mini
+      NEON_AUTH_BASE_URL: https://ci.example.neonauth.aws.neon.tech/neondb/auth
+      NEON_AUTH_COOKIE_SECRET: ci-placeholder-cookie-secret-32chars-min
     steps:
       - name: Checkout
         uses: actions/checkout@v4

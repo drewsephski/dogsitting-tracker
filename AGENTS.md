@@ -34,7 +34,7 @@ Keep the product simple and practical. Do not overengineer.
 - Prefer Next.js Server Components, Server Actions, or Route Handlers where appropriate.
 - Do not introduce another database or persistence layer.
 - Do not add Neon Functions unless there is a concrete need.
-- No authentication for now; this is currently a single-user app.
+- Neon Auth (Managed Better Auth) gates app access; business data is not yet scoped per user (see Security).
 - Preserve existing tablecn infrastructure unless it clearly conflicts with the product.
 
 ## Core Data
@@ -139,3 +139,7 @@ Expected totals:
 - All time: $610
 - 4 bookings
 - 2 clients
+
+## Security (auth)
+
+Neon Auth protects routes and mutations, but bookings, clients, settings, and revenue are **not** filtered by authenticated user ID. Any signed-in account can read and change the same business data until user ownership or RLS is added. Disable open sign-up in Neon Auth project settings before a public production launch if registration should be restricted.

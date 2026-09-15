@@ -7,6 +7,7 @@ import {
   toUIMessageStream,
 } from "ai";
 import { env } from "@/env.js";
+import { requireSession } from "@/lib/auth/require-session";
 import { chatPostBodySchema } from "@/lib/chat/request";
 import { CHAT_SYSTEM_PROMPT } from "@/lib/chat/system-prompt";
 import type { ChatMessage } from "@/lib/chat/tools";
@@ -23,6 +24,11 @@ function jsonError(message: string, status: number) {
 }
 
 export async function POST(req: Request) {
+  const session = await requireSession();
+  if (!session) {
+    return jsonError("Unauthorized", 401);
+  }
+
   let body: unknown;
   try {
     body = await req.json();
