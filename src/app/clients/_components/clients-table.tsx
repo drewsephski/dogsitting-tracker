@@ -59,7 +59,7 @@ export function ClientsTable({ promises }: ClientsTableProps) {
       <DataTable table={table}>
         <DataTableToolbar table={table}>
           <DataTableSortList table={table} align="end" />
-          <ClientsTableToolbarActions />
+          <ClientsTableToolbarActions table={table} />
         </DataTableToolbar>
       </DataTable>
       <UpdateClientDialog
