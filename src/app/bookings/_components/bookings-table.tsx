@@ -65,7 +65,7 @@ export function BookingsTable({ promises }: BookingsTableProps) {
       <DataTable table={table}>
         <DataTableToolbar table={table}>
           <DataTableSortList table={table} align="end" />
-          <BookingsTableToolbarActions clients={clients} />
+          <BookingsTableToolbarActions table={table} clients={clients} />
         </DataTableToolbar>
       </DataTable>
       <UpdateBookingDialog
