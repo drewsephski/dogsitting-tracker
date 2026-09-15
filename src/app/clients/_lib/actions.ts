@@ -1,8 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
-import { requireSession } from "@/lib/auth/require-session";
+import { requireUserId } from "@/lib/auth/require-user-id";
 import { deleteClient, patchClient, upsertClient } from "@/lib/data/clients";
 import { getErrorMessage } from "@/lib/handle-error";
 
@@ -22,18 +21,11 @@ function revalidateClientViews() {
   revalidatePath(DASHBOARD_PATH);
 }
 
-async function assertAuthenticated() {
-  const session = await requireSession();
-  if (!session) {
-    redirect("/auth/sign-in");
-  }
-}
-
 export async function createClientAction(input: unknown) {
-  await assertAuthenticated();
+  const userId = await requireUserId();
   try {
     const formData = clientFormSchema.parse(input);
-    await upsertClient(parseClientFormInput(formData));
+    await upsertClient(userId, parseClientFormInput(formData));
     revalidateClientViews();
     return { data: null, error: null };
   } catch (err) {
@@ -42,11 +34,14 @@ export async function createClientAction(input: unknown) {
 }
 
 export async function updateClientAction(input: unknown & { id: string }) {
-  await assertAuthenticated();
+  const userId = await requireUserId();
   try {
     const { id, ...rest } = input;
     const formData = clientFormSchema.parse(rest);
-    const updated = await upsertClient(parseClientFormInput(formData, id));
+    const updated = await upsertClient(
+      userId,
+      parseClientFormInput(formData, id),
+    );
     if (!updated) {
       return { data: null, error: "Client not found" };
     }
@@ -58,10 +53,10 @@ export async function updateClientAction(input: unknown & { id: string }) {
 }
 
 export async function patchClientAction(input: unknown) {
-  await assertAuthenticated();
+  const userId = await requireUserId();
   try {
     const { id, ...patch } = clientPatchSchema.parse(input);
-    const updated = await patchClient(id, patch);
+    const updated = await patchClient(userId, id, patch);
     if (!updated) {
       return { data: null, error: "Client not found" };
     }
@@ -73,9 +68,9 @@ export async function patchClientAction(input: unknown) {
 }
 
 export async function deleteClientAction(input: { id: string }) {
-  await assertAuthenticated();
+  const userId = await requireUserId();
   try {
-    const deleted = await deleteClient(input.id);
+    const deleted = await deleteClient(userId, input.id);
     if (!deleted) {
       return { data: null, error: "Client not found" };
     }

@@ -1,8 +1,9 @@
 import "server-only";
 
-import { asc, desc, eq } from "drizzle-orm";
+import { and, asc, desc, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { bookings, clients } from "@/db/schema";
+import { ensureClientOwnedByUser } from "@/lib/data/ensure-client-owned";
 import type { BookingInput } from "@/lib/definitions";
 import { bookingInputSchema } from "@/lib/definitions";
 
@@ -10,11 +11,17 @@ export type BookingWithClient = typeof bookings.$inferSelect & {
   client: typeof clients.$inferSelect;
 };
 
-export async function listBookings(): Promise<BookingWithClient[]> {
+export async function listBookings(
+  userId: string,
+): Promise<BookingWithClient[]> {
   const rows = await db
     .select()
     .from(bookings)
-    .innerJoin(clients, eq(bookings.clientId, clients.id))
+    .innerJoin(
+      clients,
+      and(eq(bookings.clientId, clients.id), eq(clients.userId, userId)),
+    )
+    .where(eq(bookings.userId, userId))
     .orderBy(desc(bookings.startAt));
 
   return rows.map((row) => ({
@@ -24,13 +31,17 @@ export async function listBookings(): Promise<BookingWithClient[]> {
 }
 
 export async function getBookingById(
+  userId: string,
   id: string,
 ): Promise<BookingWithClient | null> {
   const row = await db
     .select()
     .from(bookings)
-    .innerJoin(clients, eq(bookings.clientId, clients.id))
-    .where(eq(bookings.id, id))
+    .innerJoin(
+      clients,
+      and(eq(bookings.clientId, clients.id), eq(clients.userId, userId)),
+    )
+    .where(and(eq(bookings.id, id), eq(bookings.userId, userId)))
     .then((rows) => rows[0]);
 
   if (!row) return null;
@@ -41,12 +52,18 @@ export async function getBookingById(
   };
 }
 
-export async function createBooking(input: BookingInput) {
+export async function createBooking(userId: string, input: BookingInput) {
   const data = bookingInputSchema.parse(input);
+
+  const clientOwned = await ensureClientOwnedByUser(userId, data.clientId);
+  if (!clientOwned) {
+    return null;
+  }
 
   const [created] = await db
     .insert(bookings)
     .values({
+      userId,
       clientId: data.clientId,
       serviceType: data.serviceType,
       startAt: data.startAt,
@@ -63,8 +80,17 @@ export async function createBooking(input: BookingInput) {
   return created;
 }
 
-export async function updateBooking(id: string, input: BookingInput) {
+export async function updateBooking(
+  userId: string,
+  id: string,
+  input: BookingInput,
+) {
   const data = bookingInputSchema.parse(input);
+
+  const clientOwned = await ensureClientOwnedByUser(userId, data.clientId);
+  if (!clientOwned) {
+    return null;
+  }
 
   const [updated] = await db
     .update(bookings)
@@ -80,7 +106,7 @@ export async function updateBooking(id: string, input: BookingInput) {
       notes: data.notes,
       status: data.status ?? "completed",
     })
-    .where(eq(bookings.id, id))
+    .where(and(eq(bookings.id, id), eq(bookings.userId, userId)))
     .returning();
 
   return updated ?? null;
@@ -97,8 +123,12 @@ export type BookingPatch = {
   endAt?: Date;
 };
 
-export async function patchBooking(id: string, patch: BookingPatch) {
-  const existing = await getBookingById(id);
+export async function patchBooking(
+  userId: string,
+  id: string,
+  patch: BookingPatch,
+) {
+  const existing = await getBookingById(userId, id);
   if (!existing) return null;
 
   const startAt = patch.startAt ?? existing.startAt;
@@ -130,25 +160,30 @@ export async function patchBooking(id: string, patch: BookingPatch) {
   const [updated] = await db
     .update(bookings)
     .set(updates)
-    .where(eq(bookings.id, id))
+    .where(and(eq(bookings.id, id), eq(bookings.userId, userId)))
     .returning();
 
   return updated ?? null;
 }
 
-export async function deleteBooking(id: string) {
+export async function deleteBooking(userId: string, id: string) {
   const [deleted] = await db
     .delete(bookings)
-    .where(eq(bookings.id, id))
+    .where(and(eq(bookings.id, id), eq(bookings.userId, userId)))
     .returning({ id: bookings.id });
 
   return deleted ?? null;
 }
 
-export async function listBookingsForClient(clientId: string) {
+export async function listBookingsForClient(userId: string, clientId: string) {
+  const clientOwned = await ensureClientOwnedByUser(userId, clientId);
+  if (!clientOwned) {
+    return [];
+  }
+
   return db
     .select()
     .from(bookings)
-    .where(eq(bookings.clientId, clientId))
+    .where(and(eq(bookings.clientId, clientId), eq(bookings.userId, userId)))
     .orderBy(asc(bookings.startAt));
 }

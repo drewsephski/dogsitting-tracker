@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import * as React from "react";
 import { DataTableSkeleton } from "@/components/data-table/data-table-skeleton";
 import { Shell } from "@/components/shell";
+import { requireUserId } from "@/lib/auth/require-user-id";
 import type { SearchParams } from "@/types";
 
 import { ClientsTable } from "./_components/clients-table";
@@ -19,8 +20,12 @@ interface ClientsPageProps {
 export default async function ClientsPage(props: ClientsPageProps) {
   const searchParams = await props.searchParams;
   const search = searchParamsCache.parse(searchParams);
+  const userId = await requireUserId();
 
-  const promises = Promise.all([getClients(search), getRepeatClientCounts()]);
+  const promises = Promise.all([
+    getClients(userId, search),
+    getRepeatClientCounts(userId),
+  ]);
 
   return (
     <Shell className="gap-2">

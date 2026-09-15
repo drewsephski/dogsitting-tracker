@@ -87,8 +87,8 @@ function getSortValue(
   }
 }
 
-export async function getBookings(input: GetBookingsSchema) {
-  let rows = (await listBookings()).map(toTableRow);
+export async function getBookings(userId: string, input: GetBookingsSchema) {
+  let rows = (await listBookings(userId)).map(toTableRow);
 
   if (input.dogName) {
     const query = input.dogName.toLowerCase();
@@ -113,10 +113,10 @@ export async function getBookings(input: GetBookingsSchema) {
   return { data, pageCount };
 }
 
-export async function getBookingStatusCounts(): Promise<
-  Record<BookingStatus, number>
-> {
-  const rows = await listBookings();
+export async function getBookingStatusCounts(
+  userId: string,
+): Promise<Record<BookingStatus, number>> {
+  const rows = await listBookings(userId);
   const counts = Object.fromEntries(
     bookingStatuses.map((status) => [status, 0]),
   ) as Record<BookingStatus, number>;
@@ -128,10 +128,10 @@ export async function getBookingStatusCounts(): Promise<
   return counts;
 }
 
-export async function getBookingServiceTypeCounts(): Promise<
-  Record<ServiceType, number>
-> {
-  const rows = await listBookings();
+export async function getBookingServiceTypeCounts(
+  userId: string,
+): Promise<Record<ServiceType, number>> {
+  const rows = await listBookings(userId);
   const counts = Object.fromEntries(
     serviceTypes.map((type) => [type, 0]),
   ) as Record<ServiceType, number>;

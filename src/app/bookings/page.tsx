@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import * as React from "react";
 import { DataTableSkeleton } from "@/components/data-table/data-table-skeleton";
 import { Shell } from "@/components/shell";
+import { requireUserId } from "@/lib/auth/require-user-id";
 import { listClients } from "@/lib/data/clients";
 import type { SearchParams } from "@/types";
 
@@ -24,12 +25,13 @@ interface BookingsPageProps {
 export default async function BookingsPage(props: BookingsPageProps) {
   const searchParams = await props.searchParams;
   const search = searchParamsCache.parse(searchParams);
+  const userId = await requireUserId();
 
   const promises = Promise.all([
-    getBookings(search),
-    getBookingStatusCounts(),
-    getBookingServiceTypeCounts(),
-    listClients(),
+    getBookings(userId, search),
+    getBookingStatusCounts(userId),
+    getBookingServiceTypeCounts(userId),
+    listClients(userId),
   ]);
 
   return (

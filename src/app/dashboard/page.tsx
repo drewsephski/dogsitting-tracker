@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Shell } from "@/components/shell";
+import { requireUserId } from "@/lib/auth/require-user-id";
 import { getDashboardSummary } from "@/lib/data/dashboard";
 import { getSettings } from "@/lib/data/settings";
 import { deriveDashboardViewModel } from "@/lib/domain/dashboard-metrics";
@@ -14,9 +15,10 @@ export const metadata: Metadata = {
 };
 
 export default async function DashboardPage() {
+  const userId = await requireUserId();
   const [summary, settings] = await Promise.all([
-    getDashboardSummary(),
-    getSettings(),
+    getDashboardSummary(userId),
+    getSettings(userId),
   ]);
 
   const view = deriveDashboardViewModel(summary);

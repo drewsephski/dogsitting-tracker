@@ -1,5 +1,7 @@
+import { eq } from "drizzle-orm";
+
 import { db } from "@/db";
-import { bookings, clients, SETTINGS_ROW_ID, settings } from "@/db/schema";
+import { bookings, clients, settings } from "@/db/schema";
 
 const DAYCARE_HOURS = 9;
 
@@ -13,18 +15,18 @@ function localDate(
   return new Date(year, month - 1, day, hour, minute, 0, 0);
 }
 
-export async function seedDomainData() {
-  await db.delete(bookings);
-  await db.delete(clients);
+export async function seedDomainData(userId: string) {
+  await db.delete(bookings).where(eq(bookings.userId, userId));
+  await db.delete(clients).where(eq(clients.userId, userId));
 
   const [ylva] = await db
     .insert(clients)
-    .values({ dogName: "Ylva" })
+    .values({ userId, dogName: "Ylva" })
     .returning();
 
   const [molly] = await db
     .insert(clients)
-    .values({ dogName: "Molly" })
+    .values({ userId, dogName: "Molly" })
     .returning();
 
   if (!ylva || !molly) {
@@ -39,6 +41,7 @@ export async function seedDomainData() {
 
   await db.insert(bookings).values(
     ylvaDays.map(({ month, day }) => ({
+      userId,
       clientId: ylva.id,
       serviceType: "daycare" as const,
       startAt: localDate(2026, month, day, 7, 0),
@@ -50,6 +53,7 @@ export async function seedDomainData() {
   );
 
   await db.insert(bookings).values({
+    userId,
     clientId: molly.id,
     serviceType: "overnight",
     startAt: localDate(2026, 8, 30, 10, 0),
@@ -60,8 +64,5 @@ export async function seedDomainData() {
     status: "completed",
   });
 
-  await db
-    .insert(settings)
-    .values({ id: SETTINGS_ROW_ID })
-    .onConflictDoNothing();
+  await db.insert(settings).values({ userId }).onConflictDoNothing();
 }

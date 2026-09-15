@@ -1,16 +1,17 @@
 import "server-only";
 
-import { asc, count, eq, sql } from "drizzle-orm";
+import { and, asc, count, eq, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { bookings, clients } from "@/db/schema";
 import type { ClientInput, ClientWithStats } from "@/lib/definitions";
 import { clientInputSchema } from "@/lib/definitions";
 import { mergeClientStats } from "@/lib/domain/client-stats";
 
-export async function listClients(): Promise<ClientWithStats[]> {
+export async function listClients(userId: string): Promise<ClientWithStats[]> {
   const clientRows = await db
     .select()
     .from(clients)
+    .where(eq(clients.userId, userId))
     .orderBy(asc(clients.dogName));
 
   const statsRows = await db
@@ -22,6 +23,7 @@ export async function listClients(): Promise<ClientWithStats[]> {
       bookingCount: count(),
     })
     .from(bookings)
+    .where(eq(bookings.userId, userId))
     .groupBy(bookings.clientId);
 
   const statsByClientId = new Map(
@@ -39,12 +41,13 @@ export async function listClients(): Promise<ClientWithStats[]> {
 }
 
 export async function getClientById(
+  userId: string,
   id: string,
 ): Promise<ClientWithStats | null> {
   const client = await db
     .select()
     .from(clients)
-    .where(eq(clients.id, id))
+    .where(and(eq(clients.id, id), eq(clients.userId, userId)))
     .then((rows) => rows[0]);
 
   if (!client) return null;
@@ -58,7 +61,7 @@ export async function getClientById(
       bookingCount: count(),
     })
     .from(bookings)
-    .where(eq(bookings.clientId, id))
+    .where(and(eq(bookings.clientId, id), eq(bookings.userId, userId)))
     .groupBy(bookings.clientId)
     .then((rows) => rows[0]);
 
@@ -87,11 +90,15 @@ export type ClientPatch = {
   contactPhone?: string | null;
 };
 
-export async function patchClient(id: string, patch: ClientPatch) {
+export async function patchClient(
+  userId: string,
+  id: string,
+  patch: ClientPatch,
+) {
   const existing = await db
     .select()
     .from(clients)
-    .where(eq(clients.id, id))
+    .where(and(eq(clients.id, id), eq(clients.userId, userId)))
     .then((rows) => rows[0]);
 
   if (!existing) return null;
@@ -119,13 +126,14 @@ export async function patchClient(id: string, patch: ClientPatch) {
         : (existing.contactPhone ?? undefined),
   });
 
-  return upsertClient(merged);
+  return upsertClient(userId, merged);
 }
 
-export async function upsertClient(input: ClientInput) {
+export async function upsertClient(userId: string, input: ClientInput) {
   const data = clientInputSchema.parse(input);
 
   const values = {
+    userId,
     dogName: data.dogName,
     ownerName: data.ownerName ?? null,
     contactEmail: data.contactEmail ? data.contactEmail : null,
@@ -136,7 +144,7 @@ export async function upsertClient(input: ClientInput) {
     const [updated] = await db
       .update(clients)
       .set(values)
-      .where(eq(clients.id, data.id))
+      .where(and(eq(clients.id, data.id), eq(clients.userId, userId)))
       .returning();
 
     return updated ?? null;
@@ -147,10 +155,10 @@ export async function upsertClient(input: ClientInput) {
   return created;
 }
 
-export async function deleteClient(id: string) {
+export async function deleteClient(userId: string, id: string) {
   const [deleted] = await db
     .delete(clients)
-    .where(eq(clients.id, id))
+    .where(and(eq(clients.id, id), eq(clients.userId, userId)))
     .returning({ id: clients.id });
 
   return deleted ?? null;

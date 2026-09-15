@@ -1,11 +1,26 @@
 import { seedDomainData } from "@/db/seed-domain";
 
+function requireSeedUserId(): string {
+  const raw = process.env.SEED_USER_ID?.trim();
+
+  if (!raw) {
+    console.error(
+      "SEED_USER_ID is required (Neon Auth user id to own seeded clients, bookings, and settings).",
+    );
+    process.exit(1);
+  }
+
+  return raw;
+}
+
 async function runSeed() {
-  console.log("⏳ Running seed...");
+  const userId = requireSeedUserId();
+
+  console.log("⏳ Running seed...", { userId });
 
   const start = Date.now();
 
-  await seedDomainData();
+  await seedDomainData(userId);
 
   const end = Date.now();
 

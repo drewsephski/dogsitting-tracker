@@ -11,7 +11,7 @@ import { requireSession } from "@/lib/auth/require-session";
 import { chatPostBodySchema } from "@/lib/chat/request";
 import { CHAT_SYSTEM_PROMPT } from "@/lib/chat/system-prompt";
 import type { ChatMessage } from "@/lib/chat/tools";
-import { chatTools } from "@/lib/chat/tools";
+import { createChatTools } from "@/lib/chat/tools";
 
 export const maxDuration = 60;
 
@@ -52,6 +52,7 @@ export async function POST(req: Request) {
   }
 
   const messages = parsed.data.messages as ChatMessage[];
+  const chatTools = createChatTools(session.user.id);
 
   try {
     const result = streamText({

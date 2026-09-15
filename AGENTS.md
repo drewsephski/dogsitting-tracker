@@ -34,7 +34,7 @@ Keep the product simple and practical. Do not overengineer.
 - Prefer Next.js Server Components, Server Actions, or Route Handlers where appropriate.
 - Do not introduce another database or persistence layer.
 - Do not add Neon Functions unless there is a concrete need.
-- Neon Auth (Managed Better Auth) gates app access; business data is not yet scoped per user (see Security).
+- Neon Auth (Managed Better Auth) gates app access; business data is scoped by Neon Auth `user.id` on clients, bookings, and settings.
 - Preserve existing tablecn infrastructure unless it clearly conflicts with the product.
 
 ## Core Data
@@ -142,4 +142,6 @@ Expected totals:
 
 ## Security (auth)
 
-Neon Auth protects routes and mutations, but bookings, clients, settings, and revenue are **not** filtered by authenticated user ID. Any signed-in account can read and change the same business data until user ownership or RLS is added. Disable open sign-up in Neon Auth project settings before a public production launch if registration should be restricted.
+Neon Auth protects routes and mutations. Bookings, clients, settings, dashboard metrics, and AI tools are scoped server-side to `session.user.id`. Never accept a `userId` from the client or from AI tool inputs.
+
+Legacy rows without `user_id` are invisible to the app until claimed with `LEGACY_DATA_OWNER_USER_ID=... pnpm db:backfill-owner` (after migration `0001_add_user_ownership`, before `0002_enforce_user_ownership`). Disable open sign-up in Neon Auth project settings before a public production launch if registration should be restricted.

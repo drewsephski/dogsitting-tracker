@@ -2,23 +2,20 @@ import "server-only";
 
 import { eq } from "drizzle-orm";
 import { db } from "@/db";
-import { SETTINGS_ROW_ID, settings } from "@/db/schema";
+import { settings } from "@/db/schema";
 import type { SettingsInput } from "@/lib/definitions";
 import { settingsInputSchema } from "@/lib/definitions";
 
-export async function getSettings() {
+export async function getSettings(userId: string) {
   const row = await db
     .select()
     .from(settings)
-    .where(eq(settings.id, SETTINGS_ROW_ID))
+    .where(eq(settings.userId, userId))
     .then((rows) => rows[0]);
 
   if (row) return row;
 
-  const [created] = await db
-    .insert(settings)
-    .values({ id: SETTINGS_ROW_ID })
-    .returning();
+  const [created] = await db.insert(settings).values({ userId }).returning();
 
   if (!created) {
     throw new Error("Failed to initialize settings");
@@ -27,10 +24,10 @@ export async function getSettings() {
   return created;
 }
 
-export async function updateSettings(input: SettingsInput) {
+export async function updateSettings(userId: string, input: SettingsInput) {
   const data = settingsInputSchema.parse(input);
 
-  await getSettings();
+  await getSettings(userId);
 
   const [updated] = await db
     .update(settings)
@@ -39,7 +36,7 @@ export async function updateSettings(input: SettingsInput) {
       monthlyExpenses: data.monthlyExpenses,
       moveOutSavingsTarget: data.moveOutSavingsTarget,
     })
-    .where(eq(settings.id, SETTINGS_ROW_ID))
+    .where(eq(settings.userId, userId))
     .returning();
 
   if (!updated) {

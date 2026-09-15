@@ -69,8 +69,8 @@ function sortClients(
   return sorted;
 }
 
-export async function getClients(input: GetClientsSchema) {
-  let rows = await listClients();
+export async function getClients(userId: string, input: GetClientsSchema) {
+  let rows = await listClients(userId);
 
   if (input.dogName) {
     const query = input.dogName.toLowerCase();
@@ -94,10 +94,10 @@ export async function getClients(input: GetClientsSchema) {
   return { data, pageCount };
 }
 
-export async function getRepeatClientCounts(): Promise<
-  Record<"true" | "false", number>
-> {
-  const rows = await listClients();
+export async function getRepeatClientCounts(
+  userId: string,
+): Promise<Record<"true" | "false", number>> {
+  const rows = await listClients(userId);
   const counts = { true: 0, false: 0 };
 
   for (const row of rows) {

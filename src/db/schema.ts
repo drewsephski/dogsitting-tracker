@@ -12,21 +12,26 @@ import { pgTable } from "@/db/utils";
 
 import { generateId } from "@/lib/id";
 
-export const SETTINGS_ROW_ID = "default";
-
-export const clients = pgTable("clients", {
-  id: varchar("id", { length: 30 })
-    .$defaultFn(() => generateId())
-    .primaryKey(),
-  dogName: varchar("dog_name", { length: 128 }).notNull(),
-  ownerName: varchar("owner_name", { length: 128 }),
-  contactEmail: varchar("contact_email", { length: 256 }),
-  contactPhone: varchar("contact_phone", { length: 32 }),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at")
-    .default(sql`current_timestamp`)
-    .$onUpdate(() => new Date()),
-});
+export const clients = pgTable(
+  "clients",
+  {
+    id: varchar("id", { length: 30 })
+      .$defaultFn(() => generateId())
+      .primaryKey(),
+    userId: varchar("user_id", { length: 128 }).notNull(),
+    dogName: varchar("dog_name", { length: 128 }).notNull(),
+    ownerName: varchar("owner_name", { length: 128 }),
+    contactEmail: varchar("contact_email", { length: 256 }),
+    contactPhone: varchar("contact_phone", { length: 32 }),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at")
+      .default(sql`current_timestamp`)
+      .$onUpdate(() => new Date()),
+  },
+  (table) => ({
+    userIdIdx: index("clients_user_id_idx").on(table.userId),
+  }),
+);
 
 export const bookings = pgTable(
   "bookings",
@@ -34,6 +39,7 @@ export const bookings = pgTable(
     id: varchar("id", { length: 30 })
       .$defaultFn(() => generateId())
       .primaryKey(),
+    userId: varchar("user_id", { length: 128 }).notNull(),
     clientId: varchar("client_id", { length: 30 })
       .notNull()
       .references(() => clients.id, { onDelete: "cascade" }),
@@ -62,11 +68,16 @@ export const bookings = pgTable(
   (table) => ({
     clientIdIdx: index("bookings_client_id_idx").on(table.clientId),
     startAtIdx: index("bookings_start_at_idx").on(table.startAt),
+    userIdIdx: index("bookings_user_id_idx").on(table.userId),
+    userIdClientIdIdx: index("bookings_user_id_client_id_idx").on(
+      table.userId,
+      table.clientId,
+    ),
   }),
 );
 
 export const settings = pgTable("settings", {
-  id: varchar("id", { length: 30 }).primaryKey().default(SETTINGS_ROW_ID),
+  userId: varchar("user_id", { length: 128 }).primaryKey(),
   monthlyIncomeGoal: real("monthly_income_goal").notNull().default(0),
   monthlyExpenses: real("monthly_expenses").notNull().default(0),
   moveOutSavingsTarget: real("move_out_savings_target").notNull().default(0),
