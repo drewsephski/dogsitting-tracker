@@ -64,11 +64,11 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: React.PropsWithChildren) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" className="h-dvh overflow-hidden" suppressHydrationWarning>
       <head />
       <body
         className={cn(
-          "min-h-screen bg-background font-sans antialiased",
+          "h-dvh overflow-hidden bg-background font-sans antialiased",
           fontSans.variable,
           fontMono.variable,
         )}
@@ -84,9 +84,11 @@ export default function RootLayout({ children }: React.PropsWithChildren) {
           enableSystem
           disableTransitionOnChange
         >
-          <div className="relative flex min-h-screen flex-col">
+          <div className="relative flex h-full min-h-0 flex-col">
             <SiteHeader />
-            <main className="flex-1">{children}</main>
+            <main className="flex min-h-0 flex-1 flex-col overflow-y-auto">
+              {children}
+            </main>
           </div>
           <TailwindIndicator />
         </ThemeProvider>

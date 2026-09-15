@@ -18,8 +18,29 @@ const openrouter = createOpenRouter({
 });
 
 export async function POST(req: Request) {
-  const body = (await req.json()) as { messages: ChatMessage[] };
-  const { messages } = body;
+  const raw = await req.text();
+  if (!raw.trim()) {
+    return Response.json({ error: "Request body is empty" }, { status: 400 });
+  }
+
+  let messages: ChatMessage[];
+  try {
+    const body = JSON.parse(raw) as { messages?: ChatMessage[] };
+    if (!body.messages || !Array.isArray(body.messages)) {
+      return Response.json(
+        { error: "Request body must include a messages array" },
+        { status: 400 },
+      );
+    }
+    messages = body.messages;
+  } catch {
+    return Response.json(
+      { error: "Request body is not valid JSON" },
+      {
+        status: 400,
+      },
+    );
+  }
 
   const result = streamText({
     model: openrouter(env.OPENROUTER_MODEL),

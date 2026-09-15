@@ -8,7 +8,7 @@ export const metadata: Metadata = {
 
 export default function ChatPage() {
   return (
-    <div className="flex h-[calc(100dvh-3.5rem)] min-h-0 flex-col overflow-hidden">
+    <>
       <header className="container shrink-0 border-border/40 border-b px-4 py-3 md:px-6">
         <h1 className="font-semibold text-lg tracking-tight">Assistant</h1>
         <p className="text-muted-foreground text-sm">
@@ -16,7 +16,7 @@ export default function ChatPage() {
           database immediately.
         </p>
       </header>
-      <ChatPanel className="min-h-0 flex-1" />
-    </div>
+      <ChatPanel className="min-h-0 flex-1 overflow-hidden" />
+    </>
   );
 }
