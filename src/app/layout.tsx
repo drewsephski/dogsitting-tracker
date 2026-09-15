@@ -62,20 +62,22 @@ export default function RootLayout({ children }: React.PropsWithChildren) {
           fontMono.variable,
         )}
       >
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="system"
-          enableSystem
-          disableTransitionOnChange
-        >
-          <div className="relative flex min-h-0 flex-1 flex-col">
-            <SiteHeader />
-            <main className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-y-contain">
-              {children}
-            </main>
-          </div>
-          <TailwindIndicator />
-        </ThemeProvider>
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+          <ThemeProvider
+            attribute="class"
+            defaultTheme="system"
+            enableSystem
+            disableTransitionOnChange
+          >
+            <div className="relative flex h-dvh max-h-dvh min-h-0 flex-col overflow-hidden">
+              <SiteHeader />
+              <main className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-y-contain">
+                {children}
+              </main>
+            </div>
+            <TailwindIndicator />
+          </ThemeProvider>
+        </div>
         <Toaster />
       </body>
     </html>

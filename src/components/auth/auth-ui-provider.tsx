@@ -18,7 +18,7 @@ export function AuthUIProvider({ children }: AuthUIProviderProps) {
   const redirectTo = resolveRedirectTo(searchParams.get("redirectTo"));
 
   return (
-    <div className={cn("neon-auth-ui")}>
+    <div className={cn("neon-auth-ui flex min-h-0 flex-1 flex-col")}>
       <BetterAuthUIProvider
         authClient={authClient}
         navigate={router.push}
