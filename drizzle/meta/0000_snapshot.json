@@ -127,12 +127,8 @@
           "name": "shadcn_bookings_client_id_shadcn_clients_id_fk",
           "tableFrom": "shadcn_bookings",
           "tableTo": "shadcn_clients",
-          "columnsFrom": [
-            "client_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["client_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -327,9 +323,7 @@
         "shadcn_tasks_code_unique": {
           "name": "shadcn_tasks_code_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "code"
-          ]
+          "columns": ["code"]
         }
       },
       "policies": {},

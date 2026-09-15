@@ -86,7 +86,7 @@ See the [documentation](https://diceui.com/docs/components/data-table) to get st
    # Start PostgreSQL container
    pnpm db:start
    
-   # Set up database schema and seed data
+   # Apply migrations and seed data (prefer db:migrate over db:push; push needs drizzle-kit >= 0.31.7 on Postgres 18)
    pnpm db:setup
    
    # Start development server
