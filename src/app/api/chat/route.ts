@@ -30,6 +30,14 @@ export async function POST(req: Request) {
     return jsonError("Request body is not valid JSON", 400);
   }
 
+  if (
+    typeof body !== "object" ||
+    body === null ||
+    !Array.isArray((body as { messages?: unknown }).messages)
+  ) {
+    return jsonError("Request body must include a messages array", 400);
+  }
+
   const parsed = chatPostBodySchema.safeParse(body);
   if (!parsed.success) {
     const message =

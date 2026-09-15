@@ -12,7 +12,7 @@ export const env = createEnv({
       .default("development"),
     DATABASE_URL: z.string().url(),
     OPENROUTER_API_KEY: z.string().min(1),
-    OPENROUTER_MODEL: z.string().min(1).default("openai/gpt-4o-mini"),
+    OPENROUTER_MODEL: z.string().min(1).default("z-ai/glm-5.3-flash"),
   },
 
   /**
