@@ -12,10 +12,12 @@ import { bookingFormSchema, parseBookingFormInput } from "./validations";
 
 const BOOKINGS_PATH = "/bookings";
 const CLIENTS_PATH = "/clients";
+const DASHBOARD_PATH = "/dashboard";
 
 function revalidateBookingViews() {
   revalidatePath(BOOKINGS_PATH);
   revalidatePath(CLIENTS_PATH);
+  revalidatePath(DASHBOARD_PATH);
 }
 
 export async function createBookingAction(input: unknown) {

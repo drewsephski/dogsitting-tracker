@@ -20,6 +20,10 @@ export async function getSettings() {
     .values({ id: SETTINGS_ROW_ID })
     .returning();
 
+  if (!created) {
+    throw new Error("Failed to initialize settings");
+  }
+
   return created;
 }
 
@@ -37,6 +41,10 @@ export async function updateSettings(input: SettingsInput) {
     })
     .where(eq(settings.id, SETTINGS_ROW_ID))
     .returning();
+
+  if (!updated) {
+    throw new Error("Failed to update settings");
+  }
 
   return updated;
 }

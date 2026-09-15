@@ -8,10 +8,12 @@ import { clientFormSchema, parseClientFormInput } from "./validations";
 
 const CLIENTS_PATH = "/clients";
 const BOOKINGS_PATH = "/bookings";
+const DASHBOARD_PATH = "/dashboard";
 
 function revalidateClientViews() {
   revalidatePath(CLIENTS_PATH);
   revalidatePath(BOOKINGS_PATH);
+  revalidatePath(DASHBOARD_PATH);
 }
 
 export async function createClientAction(input: unknown) {

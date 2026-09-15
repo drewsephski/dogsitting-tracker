@@ -8,6 +8,25 @@ export function formatCurrency(amount: number | null | undefined) {
   }).format(amount);
 }
 
+/** Formats a ratio expressed in percent points (e.g. `12.5` → `12.5%`). */
+export function formatPercent(
+  value: number | null | undefined,
+  options?: { showSign?: boolean },
+) {
+  if (value == null) return "—";
+
+  const formatted = new Intl.NumberFormat("en-US", {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 1,
+  }).format(value);
+
+  if (options?.showSign && value > 0) {
+    return `+${formatted}%`;
+  }
+
+  return `${formatted}%`;
+}
+
 export function formatDate(
   date: Date | string | number | undefined,
   opts: Intl.DateTimeFormatOptions = {},
