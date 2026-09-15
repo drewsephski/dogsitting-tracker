@@ -17,18 +17,26 @@ import {
 } from "@/lib/data/bookings";
 import { listClients, upsertClient } from "@/lib/data/clients";
 import { getDashboardSummary } from "@/lib/data/dashboard";
-import { updateSettings } from "@/lib/data/settings";
-import {
-  bookingInputSchema,
-  clientInputSchema,
-  settingsInputSchema,
-} from "@/lib/definitions";
+import { getSettings, updateSettings } from "@/lib/data/settings";
+import { bookingInputSchema, clientInputSchema } from "@/lib/definitions";
 
 import { CHAT_TOOL_NAMES } from "./constants";
 import { revalidateAppViews } from "./revalidate";
 import { serializeBooking, serializeClient } from "./serialize";
+import {
+  bookingInputFromCreateTool,
+  bookingInputFromUpdateTool,
+  createBookingToolSchema,
+  settingsInputFromToolPatch,
+  updateBookingToolSchema,
+  updateSettingsToolSchema,
+} from "./tool-schemas";
 
-export { CHAT_TOOL_NAMES, chatToolPartTypes, type ChatToolPartType } from "./constants";
+export {
+  CHAT_TOOL_NAMES,
+  type ChatToolPartType,
+  chatToolPartTypes,
+} from "./constants";
 
 const getBookingSchema = z.object({
   id: z.string().min(1).describe("Booking id"),
@@ -37,12 +45,6 @@ const getBookingSchema = z.object({
 const deleteBookingSchema = z.object({
   id: z.string().min(1).describe("Booking id to delete"),
 });
-
-const updateBookingSchema = z
-  .object({
-    id: z.string().min(1).describe("Booking id to update"),
-  })
-  .merge(bookingInputSchema.omit({ id: true }).partial());
 
 export const chatTools = {
   listBookings: tool({
@@ -69,10 +71,10 @@ export const chatTools = {
 
   createBooking: tool({
     description:
-      "Create a new booking. Requires clientId, serviceType, startAt, endAt, and revenue. Optional: nights, calendarDays, careHours, notes, status.",
-    inputSchema: bookingInputSchema.omit({ id: true }),
+      "Create a new booking. Requires clientId, serviceType, startAt, endAt, and revenue. Optional: nights, calendarDays, careHours, notes, status. Use ISO-8601 strings for startAt and endAt.",
+    inputSchema: createBookingToolSchema,
     execute: async (input) => {
-      const created = await createBooking(input);
+      const created = await createBooking(bookingInputFromCreateTool(input));
       if (!created) {
         return { error: "Failed to create booking" };
       }
@@ -86,30 +88,28 @@ export const chatTools = {
 
   updateBooking: tool({
     description:
-      "Update an existing booking by id. Only include fields that should change; omitted fields stay as they are.",
-    inputSchema: updateBookingSchema,
+      "Update an existing booking by id. Only include fields that should change; omitted fields stay as they are. Use ISO-8601 strings for startAt and endAt when changing dates.",
+    inputSchema: updateBookingToolSchema,
     execute: async ({ id, ...patch }) => {
       const existing = await getBookingById(id);
       if (!existing) {
         return { error: "Booking not found", id };
       }
 
-      const merged = bookingInputSchema.parse({
-        clientId: patch.clientId ?? existing.clientId,
-        serviceType: patch.serviceType ?? existing.serviceType,
-        startAt: patch.startAt ?? existing.startAt,
-        endAt: patch.endAt ?? existing.endAt,
-        nights: patch.nights !== undefined ? patch.nights : existing.nights,
-        calendarDays:
-          patch.calendarDays !== undefined
-            ? patch.calendarDays
-            : existing.calendarDays,
-        careHours:
-          patch.careHours !== undefined ? patch.careHours : existing.careHours,
-        revenue: patch.revenue ?? existing.revenue,
-        notes: patch.notes !== undefined ? patch.notes : existing.notes,
-        status: patch.status ?? existing.status,
+      const existingInput = bookingInputSchema.parse({
+        clientId: existing.clientId,
+        serviceType: existing.serviceType,
+        startAt: existing.startAt,
+        endAt: existing.endAt,
+        nights: existing.nights,
+        calendarDays: existing.calendarDays,
+        careHours: existing.careHours,
+        revenue: existing.revenue,
+        notes: existing.notes,
+        status: existing.status,
       });
+
+      const merged = bookingInputFromUpdateTool(existingInput, patch);
 
       const updated = await updateBooking(id, merged);
       if (!updated) {
@@ -180,10 +180,19 @@ export const chatTools = {
 
   updateSettings: tool({
     description:
-      "Update planning settings: monthly income goal, monthly expenses, and move-out savings target.",
-    inputSchema: settingsInputSchema,
-    execute: async (input) => {
-      const updated = await updateSettings(input);
+      "Update planning settings. Only include fields that should change: monthlyIncomeGoal, monthlyExpenses, moveOutSavingsTarget. Do not invent values for omitted fields.",
+    inputSchema: updateSettingsToolSchema,
+    execute: async (patch) => {
+      const current = await getSettings();
+      const merged = settingsInputFromToolPatch(
+        {
+          monthlyIncomeGoal: current.monthlyIncomeGoal,
+          monthlyExpenses: current.monthlyExpenses,
+          moveOutSavingsTarget: current.moveOutSavingsTarget,
+        },
+        patch,
+      );
+      const updated = await updateSettings(merged);
       revalidateAppViews();
       return {
         settings: {

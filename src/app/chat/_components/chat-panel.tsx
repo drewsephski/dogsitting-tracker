@@ -3,12 +3,15 @@
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
 import { Loader2, Send } from "lucide-react";
-import { useRouter } from "next/navigation";
-import { useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import {
+  CHAT_EXAMPLE_PROMPTS,
+  CHAT_TOOL_DONE_LABELS,
+  CHAT_TOOL_LABELS,
   CHAT_TOOL_NAMES,
+  type ChatToolName,
   type ChatToolPartType,
 } from "@/lib/chat/constants";
 import type { ChatMessage } from "@/lib/chat/tools";
@@ -22,6 +25,10 @@ function isToolPart(type: string): type is ChatToolPartType {
   return toolPartTypes.has(type);
 }
 
+function toolNameFromPartType(type: ChatToolPartType): ChatToolName {
+  return type.replace("tool-", "") as ChatToolName;
+}
+
 interface ToolActivityPartProps {
   type: ChatToolPartType;
   state?: string;
@@ -30,167 +37,297 @@ interface ToolActivityPartProps {
 }
 
 function ToolActivityPart({ part }: { part: ToolActivityPartProps }) {
-  const toolLabel = part.type.replace("tool-", "");
-  const state = "state" in part ? part.state : undefined;
+  const toolName = toolNameFromPartType(part.type);
+  const activeLabel = CHAT_TOOL_LABELS[toolName];
+  const doneLabel = CHAT_TOOL_DONE_LABELS[toolName] ?? "Done";
+  const state = part.state;
 
   if (state === "output-error") {
     return (
-      <p className="text-destructive text-xs">
-        {toolLabel}: {part.errorText}
+      <p className="text-destructive text-xs" role="status">
+        {activeLabel} — something went wrong.
+        {process.env.NODE_ENV === "development" && part.errorText ? (
+          <span className="mt-1 block font-mono text-[10px] opacity-80">
+            {part.errorText}
+          </span>
+        ) : null}
       </p>
     );
   }
 
   if (state === "output-available" && "output" in part) {
     return (
-      <details className="text-muted-foreground text-xs">
-        <summary className="cursor-pointer list-none marker:content-none">
-          <span className="font-mono text-[11px]">{toolLabel}</span>
-          <span className="ml-1 text-foreground/50">— done</span>
-        </summary>
-        <pre className="mt-1 max-h-40 overflow-auto rounded-md border bg-muted/40 p-2 font-mono text-[10px] leading-relaxed">
-          {JSON.stringify(part.output, null, 2)}
-        </pre>
-      </details>
+      <div className="text-muted-foreground text-xs">
+        <p className="text-foreground/70">{doneLabel}</p>
+        <details className="mt-1">
+          <summary className="cursor-pointer text-[11px] opacity-60 hover:opacity-100">
+            Developer details
+          </summary>
+          <pre className="mt-1 max-h-32 overflow-auto rounded-md border bg-muted/30 p-2 font-mono text-[10px] leading-relaxed">
+            {JSON.stringify(part.output, null, 2)}
+          </pre>
+        </details>
+      </div>
     );
   }
 
   return (
-    <p className="text-muted-foreground text-xs">
-      <Loader2 className="mr-1 inline size-3 animate-spin" aria-hidden="true" />
-      <span className="font-mono">{toolLabel}</span>
-      <span className="ml-1">…</span>
+    <p
+      className="text-muted-foreground text-xs"
+      role="status"
+      aria-live="polite"
+    >
+      <Loader2
+        className="mr-1.5 inline size-3 animate-spin"
+        aria-hidden="true"
+      />
+      {activeLabel}…
     </p>
   );
 }
 
-function MessageBubble({ message }: { message: ChatMessage }) {
+function MessageRow({ message }: { message: ChatMessage }) {
   const isUser = message.role === "user";
+  const textParts = message.parts.filter(
+    (part) => part.type === "text" && part.text.trim(),
+  );
+  const toolParts = message.parts.filter((part) => isToolPart(part.type));
+
+  if (!isUser && textParts.length === 0 && toolParts.length > 0) {
+    return (
+      <div className="flex flex-col gap-2 py-1">
+        {toolParts.map((part, index) => {
+          const toolPart: ToolActivityPartProps = {
+            type: part.type as ChatToolPartType,
+            state: "state" in part ? String(part.state) : undefined,
+            output: "output" in part ? part.output : undefined,
+            errorText: "errorText" in part ? part.errorText : undefined,
+          };
+          return (
+            <ToolActivityPart
+              key={`${message.id}-tool-${index}`}
+              part={toolPart}
+            />
+          );
+        })}
+      </div>
+    );
+  }
 
   return (
     <div
       className={cn(
-        "flex flex-col gap-1.5",
+        "flex w-full flex-col gap-1",
         isUser ? "items-end" : "items-start",
       )}
     >
-      <div
-        className={cn(
-          "max-w-[min(100%,42rem)] rounded-lg px-3 py-2 text-sm leading-relaxed",
-          isUser
-            ? "bg-primary text-primary-foreground"
-            : "border bg-card text-card-foreground",
-        )}
-      >
-        {message.parts.map((part, index) => {
-          if (part.type === "text") {
-            if (!part.text.trim()) return null;
-            return (
-              <p
-                key={`${message.id}-text-${index}`}
-                className="whitespace-pre-wrap"
-              >
-                {part.text}
-              </p>
-            );
-          }
-
-          if (isToolPart(part.type)) {
+      {isUser ? (
+        <div className="max-w-[85%] rounded-lg bg-muted px-3 py-2 text-sm leading-relaxed">
+          {textParts.map((part, index) => (
+            <p
+              key={`${message.id}-text-${index}`}
+              className="whitespace-pre-wrap"
+            >
+              {part.type === "text" ? part.text : null}
+            </p>
+          ))}
+        </div>
+      ) : (
+        <div className="w-full max-w-none space-y-3 text-sm leading-relaxed">
+          {toolParts.map((part, index) => {
             const toolPart: ToolActivityPartProps = {
-              type: part.type,
+              type: part.type as ChatToolPartType,
               state: "state" in part ? String(part.state) : undefined,
               output: "output" in part ? part.output : undefined,
               errorText: "errorText" in part ? part.errorText : undefined,
             };
             return (
-              <div
+              <ToolActivityPart
                 key={`${message.id}-tool-${index}`}
-                className="mt-2 border-border/50 border-t pt-2 first:mt-0 first:border-0 first:pt-0"
-              >
-                <ToolActivityPart part={toolPart} />
-              </div>
+                part={toolPart}
+              />
             );
-          }
-
-          return null;
-        })}
-      </div>
+          })}
+          {textParts.map((part, index) => (
+            <p
+              key={`${message.id}-text-${index}`}
+              className="whitespace-pre-wrap text-foreground/90"
+            >
+              {part.type === "text" ? part.text : null}
+            </p>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
 
-export function ChatPanel() {
-  const router = useRouter();
+interface ChatPanelProps {
+  className?: string;
+}
+
+const SCROLL_NEAR_BOTTOM_PX = 120;
+
+export function ChatPanel({ className }: ChatPanelProps) {
+  const scrollRef = useRef<HTMLDivElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
-  const { messages, sendMessage, status, error } = useChat<ChatMessage>({
-    transport: new DefaultChatTransport({
-      api: "/api/chat",
-    }),
-    onFinish: () => {
-      router.refresh();
-    },
-  });
+  const stickToBottomRef = useRef(true);
+  const [draft, setDraft] = useState("");
+
+  const { messages, sendMessage, status, error, clearError } =
+    useChat<ChatMessage>({
+      transport: new DefaultChatTransport({
+        api: "/api/chat",
+      }),
+    });
 
   const isBusy = status === "submitted" || status === "streaming";
 
-  function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const form = event.currentTarget;
-    const formData = new FormData(form);
-    const text = String(formData.get("message") ?? "").trim();
-    if (!text || isBusy) return;
+  const scrollToBottom = useCallback((behavior: ScrollBehavior = "smooth") => {
+    bottomRef.current?.scrollIntoView({ behavior, block: "end" });
+  }, []);
 
-    sendMessage({ text });
-    form.reset();
-    queueMicrotask(() =>
-      bottomRef.current?.scrollIntoView({ behavior: "smooth" }),
-    );
+  useEffect(() => {
+    const element = scrollRef.current;
+    if (!element) return;
+
+    function handleScroll() {
+      const container = scrollRef.current;
+      if (!container) return;
+      const distanceFromBottom =
+        container.scrollHeight - container.scrollTop - container.clientHeight;
+      stickToBottomRef.current = distanceFromBottom < SCROLL_NEAR_BOTTOM_PX;
+    }
+
+    element.addEventListener("scroll", handleScroll, { passive: true });
+    return () => element.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  const scrollTriggerKey = `${messages.length}:${messages.at(-1)?.id ?? ""}:${messages.at(-1)?.parts.length ?? 0}`;
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: re-run when message content streams in
+  useEffect(() => {
+    if (!stickToBottomRef.current) return;
+    scrollToBottom(status === "streaming" ? "auto" : "smooth");
+  }, [scrollTriggerKey, status, scrollToBottom]);
+
+  function handleSend(text: string) {
+    const trimmed = text.trim();
+    if (!trimmed || isBusy) return;
+    clearError();
+    stickToBottomRef.current = true;
+    sendMessage({ text: trimmed });
+    setDraft("");
   }
 
+  function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    handleSend(draft);
+  }
+
+  function handleComposerKeyDown(
+    event: React.KeyboardEvent<HTMLTextAreaElement>,
+  ) {
+    if (event.key !== "Enter" || event.shiftKey) return;
+    event.preventDefault();
+    handleSend(draft);
+  }
+
+  const showEmptyState = messages.length === 0 && !isBusy;
+
   return (
-    <div className="flex min-h-[calc(100dvh-3.5rem)] flex-col">
-      <div className="flex-1 overflow-y-auto px-1 py-4">
-        <div className="mx-auto flex max-w-2xl flex-col gap-4">
-          {messages.length === 0 ? (
-            <p className="text-center text-muted-foreground text-sm">
-              Ask about bookings, clients, revenue, or planning settings. I use
-              your live data and won&apos;t guess dates or amounts.
-            </p>
+    <div className={cn("flex min-h-0 flex-col", className)}>
+      <div
+        ref={scrollRef}
+        role="log"
+        aria-live="polite"
+        aria-label="Chat messages"
+        className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-4 md:px-6"
+      >
+        <div className="mx-auto flex min-h-full w-full max-w-3xl flex-col">
+          {showEmptyState ? (
+            <div className="flex flex-1 flex-col items-center justify-center gap-6 py-8 text-center">
+              <div className="space-y-2">
+                <h2 className="font-medium text-base">
+                  Ask about your business
+                </h2>
+                <p className="max-w-md text-muted-foreground text-sm leading-relaxed">
+                  I use your live bookings, clients, and settings. I won&apos;t
+                  guess dates or dollar amounts.
+                </p>
+              </div>
+              <ul className="flex w-full max-w-lg flex-col gap-2">
+                {CHAT_EXAMPLE_PROMPTS.map((prompt) => (
+                  <li key={prompt}>
+                    <button
+                      type="button"
+                      className="w-full rounded-lg border border-border/60 bg-muted/30 px-3 py-2.5 text-left text-sm transition-colors hover:bg-muted/60"
+                      onClick={() => handleSend(prompt)}
+                    >
+                      {prompt}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
           ) : (
-            messages.map((message) => (
-              <MessageBubble key={message.id} message={message} />
-            ))
+            <div className="flex flex-col gap-6 pb-2">
+              {messages.map((message) => (
+                <MessageRow key={message.id} message={message} />
+              ))}
+            </div>
           )}
+
           {error ? (
-            <p className="text-center text-destructive text-sm" role="alert">
-              {error.message}
-            </p>
+            <div
+              className="mx-auto mt-4 w-full max-w-3xl rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm"
+              role="alert"
+            >
+              <p>
+                Something went wrong while processing that message. Try again.
+              </p>
+              {process.env.NODE_ENV === "development" ? (
+                <p className="mt-1 font-mono text-destructive text-xs">
+                  {error.message}
+                </p>
+              ) : null}
+            </div>
           ) : null}
-          <div ref={bottomRef} />
+
+          <div ref={bottomRef} className="h-px shrink-0" aria-hidden="true" />
         </div>
       </div>
 
-      <div className="border-t bg-background/80 px-1 py-3 backdrop-blur-sm">
+      <div className="shrink-0 border-t bg-background/95 px-4 py-3 backdrop-blur-sm md:px-6">
         <form
           onSubmit={handleSubmit}
-          className="mx-auto flex max-w-2xl gap-2"
+          className="mx-auto flex w-full max-w-3xl items-end gap-2"
           aria-label="Send a message"
         >
-          <Input
+          <Textarea
             name="message"
+            value={draft}
+            onChange={(event) => setDraft(event.target.value)}
+            onKeyDown={handleComposerKeyDown}
             placeholder="Message the assistant…"
             disabled={isBusy}
             autoComplete="off"
             aria-label="Message"
-            className="flex-1"
+            rows={1}
+            className="max-h-40 min-h-10 resize-none py-2.5"
           />
-          <Button type="submit" disabled={isBusy} aria-label="Send message">
+          <Button
+            type="submit"
+            size="icon"
+            disabled={isBusy || !draft.trim()}
+            aria-label={isBusy ? "Sending message" : "Send message"}
+            className="shrink-0"
+          >
             {isBusy ? (
               <Loader2 className="size-4 animate-spin" aria-hidden="true" />
             ) : (
               <Send className="size-4" aria-hidden="true" />
             )}
-            <span className="sr-only">Send</span>
           </Button>
         </form>
       </div>
