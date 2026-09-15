@@ -1,11 +1,11 @@
-import { seedTasks } from "@/app/_lib/seeds";
+import { seedDomainData } from "@/db/seed-domain";
 
 async function runSeed() {
   console.log("⏳ Running seed...");
 
   const start = Date.now();
 
-  await seedTasks({ count: 100 });
+  await seedDomainData();
 
   const end = Date.now();
 

@@ -1,5 +1,13 @@
 {
   "version": "5",
-  "dialect": "mysql",
-  "entries": []
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1789492873981,
+      "tag": "0000_chilly_tarot",
+      "breakpoints": true
+    }
+  ]
 }

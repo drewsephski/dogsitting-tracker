@@ -26,7 +26,11 @@
     "db:seed": "dotenv tsx src/db/seed.ts",
     "db:setup": "pnpm db:push && pnpm db:seed",
     "db:reset": "pnpm db:stop && rimraf docker-data && pnpm db:start && sleep 10 && pnpm db:setup",
-    "db:studio": "dotenv drizzle-kit studio"
+    "db:studio": "dotenv drizzle-kit studio",
+    "neon:plan": "neon config plan",
+    "neon:apply": "neon config apply",
+    "neon:env": "neon env pull",
+    "neon:test:hello": "dotenv -e .env.local -- sh -c 'curl -sfL \"$NEON_FUNCTION_HELLO_BASE_URL\"'"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
@@ -34,6 +38,8 @@
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",
     "@hookform/resolvers": "^5.2.2",
+    "@neon/config": "^1.5.0",
+    "@neon/env": "^1.3.4",
     "@radix-ui/react-checkbox": "^1.3.3",
     "@radix-ui/react-dialog": "^1.1.15",
     "@radix-ui/react-dropdown-menu": "^2.1.16",
@@ -84,6 +90,7 @@
     "@types/react-dom": "^19.1.9",
     "dotenv-cli": "^10.0.0",
     "drizzle-kit": "^0.31.4",
+    "neon": "^4.18.0",
     "pg": "^8.16.3",
     "postcss": "^8.5.6",
     "rimraf": "^6.0.1",
