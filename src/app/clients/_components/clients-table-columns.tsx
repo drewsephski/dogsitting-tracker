@@ -59,6 +59,9 @@ export function getClientsTableColumns({
         <DataTableColumnHeader column={column} title="Owner" />
       ),
       cell: ({ row }) => formatOptionalText(row.original.ownerName),
+      meta: {
+        label: "Owner",
+      },
     },
     {
       id: "contactEmail",
@@ -71,6 +74,9 @@ export function getClientsTableColumns({
           {formatOptionalText(row.original.contactEmail)}
         </span>
       ),
+      meta: {
+        label: "Email",
+      },
     },
     {
       id: "contactPhone",
@@ -79,6 +85,9 @@ export function getClientsTableColumns({
         <DataTableColumnHeader column={column} title="Phone" />
       ),
       cell: ({ row }) => formatOptionalText(row.original.contactPhone),
+      meta: {
+        label: "Phone",
+      },
     },
     {
       id: "bookingCount",
@@ -89,6 +98,9 @@ export function getClientsTableColumns({
       cell: ({ row }) => (
         <span className="tabular-nums">{row.original.bookingCount}</span>
       ),
+      meta: {
+        label: "Bookings",
+      },
     },
     {
       id: "totalRevenue",
@@ -97,6 +109,9 @@ export function getClientsTableColumns({
         <DataTableColumnHeader column={column} title="Revenue" />
       ),
       cell: ({ row }) => formatCurrency(row.original.totalRevenue),
+      meta: {
+        label: "Revenue",
+      },
     },
     {
       id: "isRepeatClient",

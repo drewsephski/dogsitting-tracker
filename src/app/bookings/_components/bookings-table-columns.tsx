@@ -110,6 +110,9 @@ export function getBookingsTableColumns({
         <DataTableColumnHeader column={column} title="Nights" />
       ),
       cell: ({ row }) => formatOptionalNumber(row.original.nights),
+      meta: {
+        label: "Nights",
+      },
     },
     {
       id: "calendarDays",
@@ -118,6 +121,9 @@ export function getBookingsTableColumns({
         <DataTableColumnHeader column={column} title="Days" />
       ),
       cell: ({ row }) => formatOptionalNumber(row.original.calendarDays),
+      meta: {
+        label: "Days",
+      },
     },
     {
       id: "careHours",
@@ -126,6 +132,9 @@ export function getBookingsTableColumns({
         <DataTableColumnHeader column={column} title="Hours" />
       ),
       cell: ({ row }) => formatOptionalNumber(row.original.careHours),
+      meta: {
+        label: "Hours",
+      },
     },
     {
       id: "revenue",
@@ -134,6 +143,9 @@ export function getBookingsTableColumns({
         <DataTableColumnHeader column={column} title="Revenue" />
       ),
       cell: ({ row }) => formatCurrency(row.original.revenue),
+      meta: {
+        label: "Revenue",
+      },
     },
     {
       id: "status",
