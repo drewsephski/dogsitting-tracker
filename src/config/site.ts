@@ -4,5 +4,5 @@ export const siteConfig = {
   name: "Dog Sit",
   description:
     "Track dog-sitting bookings, clients, revenue, and income goals—with an AI assistant for natural-language updates.",
-  url: "https://tablecn.com",
+  url: "https://github.com/drewsephski/dogsitting-tracker",
 };

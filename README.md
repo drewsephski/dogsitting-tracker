@@ -1,113 +1,118 @@
-# [tablecn](https://tablecn.com)
+# Dog Sit
 
-This is a shadcn table component with server-side sorting, filtering, and pagination. It is bootstrapped with `create-t3-app`.
+A practical dog-sitting business tracker: bookings, clients, revenue and planning goals, plus an AI assistant for natural-language data entry. The data tables are built on [tablecn](https://github.com/sadmann7/tablecn) (shadcn + TanStack Table with server-side sorting, filtering, and pagination).
 
-[![tablecn](./public/images/screenshot.png)](https://tablecn.com)
+**Repository:** [https://github.com/drewsephski/dogsitting-tracker](https://github.com/drewsephski/dogsitting-tracker)
 
-[![Vercel OSS Program](https://vercel.com/oss/program-badge.svg)](https://vercel.com/oss)
+## Primary views
 
-## Documentation
+- **Dashboard** — revenue, goals, and business metrics
+- **Bookings** — service types, dates, revenue, and status
+- **Clients** — dogs and contact info; totals derived from bookings
+- **Chat** — AI tools to read and update the same data as the UI
 
-See the [documentation](https://diceui.com/docs/components/data-table) to get started.
+Access is gated with [Neon Auth](https://neon.tech/docs/neon-auth/overview); bookings, clients, and settings are scoped to the signed-in user.
 
-## Tech Stack
+## Tech stack
 
-- **Framework:** [Next.js](https://nextjs.org)
+- **Framework:** [Next.js](https://nextjs.org) (App Router)
 - **Styling:** [Tailwind CSS](https://tailwindcss.com)
-- **UI Components:** [shadcn/ui](https://ui.shadcn.com)
-- **Table package:** [TanStack/react-table](https://tanstack.com/table/latest)
-- **Database:** [Neon](https://neon.tech)
-- **ORM:** [Drizzle ORM](https://orm.drizzle.team)
+- **UI:** [shadcn/ui](https://ui.shadcn.com)
+- **Tables:** [TanStack Table](https://tanstack.com/table/latest) via tablecn patterns
+- **Database:** [Neon](https://neon.tech) (PostgreSQL)
+- **ORM:** [Drizzle](https://orm.drizzle.team)
 - **Validation:** [Zod](https://zod.dev)
+- **AI:** [Vercel AI SDK](https://sdk.vercel.ai) with [OpenRouter](https://openrouter.ai)
 
-## Features
+## Environment variables
 
-- [x] Server-side pagination, sorting, and filtering
-- [x] Customizable columns
-- [x] Auto generated filters from column definitions
-- [x] Dynamic `Data-Table-Toolbar` with search, filters, and actions
-- [x] `Notion/Airtable` like advanced filtering
-- [x] `Linear` like filter menu for command palette filtering
-- [x] Action bar on row selection
+Copy `.env.example` to `.env` (and use `.env.local` for secrets pulled from Neon):
 
-## Running Locally
+| Variable | Purpose |
+| --- | --- |
+| `DATABASE_URL` | Neon (or Postgres) connection string |
+| `DATABASE_URL_UNPOOLED` | Direct connection for migrations (Neon) |
+| `NEON_BRANCH` | Neon branch name (e.g. `production`) |
+| `NEON_FUNCTION_HELLO_BASE_URL` | Optional Neon function URL after `pnpm neon:apply` |
+| `NEON_AUTH_BASE_URL` | Neon Auth endpoint |
+| `NEON_AUTH_COOKIE_SECRET` | Session cookie secret (32+ characters) |
+| `OPENROUTER_API_KEY` | API key for the chat assistant |
+| `OPENROUTER_MODEL` | OpenRouter model id (optional; has a default in code) |
 
-### Quick Setup (with docker)
+For Neon, link the project (`npx neon link`) and run `pnpm neon:env` to refresh auth and database URLs. For local Docker Postgres, see the commented block in `.env.example`.
+
+Legacy rows without `user_id` stay hidden until claimed with `LEGACY_DATA_OWNER_USER_ID=... pnpm db:backfill-owner` (see `AGENTS.md`).
+
+## Running locally
+
+### Quick setup (Docker Postgres)
 
 1. **Clone the repository**
 
    ```bash
-   git clone https://github.com/sadmann7/tablecn
-   cd tablecn
+   git clone https://github.com/drewsephski/dogsitting-tracker.git
+   cd dogsitting-tracker
    ```
 
-2. **Copy the environment variables**
+2. **Copy environment variables**
 
    ```bash
    cp .env.example .env
    ```
 
-3. **Run the setup**
+   Fill in `OPENROUTER_API_KEY`, Neon Auth values, and either Neon `DATABASE_URL` or the Docker Postgres settings from the comments in `.env.example`.
+
+3. **Run setup**
 
    ```bash
    pnpm ollie
    ```
 
-   This will install dependencies, start the Docker PostgreSQL instance, set up the database schema, and seed it with sample data.
+   This installs dependencies, starts Docker PostgreSQL (if configured), migrates, and seeds sample data.
 
-### Manual Setup
-
-1. **Clone the repository**
+4. **Start the dev server**
 
    ```bash
-   git clone https://github.com/sadmann7/tablecn
-   cd tablecn
+   pnpm dev
    ```
 
-2. **Install dependencies**
+### Manual setup
+
+1. Clone and install:
 
    ```bash
+   git clone https://github.com/drewsephski/dogsitting-tracker.git
+   cd dogsitting-tracker
    pnpm install
    ```
 
-3. **Set up environment variables**
+2. Configure `.env` / `.env.local` as above.
+
+3. Apply schema and seed:
 
    ```bash
-   cp .env.example .env
+   pnpm db:setup
    ```
 
-   Update the `.env` file with your database credentials.
-
-4. **Choose your database approach:**
-
-   **Option A: Use Docker PostgreSQL**
+4. Run:
 
    ```bash
-   # Start PostgreSQL container
-   pnpm db:start
-   
-   # Apply migrations and seed data (prefer db:migrate over db:push; push needs drizzle-kit >= 0.31.7 on Postgres 18)
-   pnpm db:setup
-   
-   # Start development server
    pnpm dev
    ```
 
-   **Option B: Use existing PostgreSQL database**
+## Scripts
 
-   ```bash
-   # Update .env with your database URL
-   # Then set up database schema and seed data
-   pnpm db:setup
-   
-   # Start development server
-   pnpm dev
-   ```
+- `pnpm lint` / `pnpm typecheck` — code quality
+- `pnpm test` — Vitest (database tests skip without `DATABASE_URL`)
+- `pnpm db:migrate` / `pnpm db:seed` — database lifecycle
+- `pnpm neon:apply` / `pnpm neon:env` — Neon project config and env pull
 
-## How do I deploy this?
+## Deployment
 
-Follow the deployment guides for [Vercel](https://create.t3.gg/en/deployment/vercel), [Netlify](https://create.t3.gg/en/deployment/netlify) and [Docker](https://create.t3.gg/en/deployment/docker) for more information.
+Deploy like any Next.js app (e.g. [Vercel](https://vercel.com/docs/frameworks/nextjs)). Set the same environment variables as in production Neon and OpenRouter.
 
 ## Credits
 
-- [shadcn/ui](https://github.com/shadcn-ui/ui/tree/main/apps/www/app/(app)/examples/tasks) - For the initial implementation of the data table.
+- [tablecn](https://github.com/sadmann7/tablecn) — table infrastructure and patterns
+- [shadcn/ui](https://ui.shadcn.com) — UI components
+- [create-t3-app](https://create.t3.gg) — project scaffolding
