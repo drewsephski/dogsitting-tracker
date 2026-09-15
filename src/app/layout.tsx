@@ -7,7 +7,6 @@ import { cn } from "@/lib/utils";
 import "@/styles/globals.css";
 
 import type { Metadata, Viewport } from "next";
-import Script from "next/script";
 import { Toaster } from "@/components/ui/sonner";
 import { fontMono, fontSans } from "@/lib/fonts";
 
@@ -19,21 +18,12 @@ export const metadata: Metadata = {
   },
   description: siteConfig.description,
   keywords: [
-    "nextjs",
-    "react",
-    "table",
-    "react-table",
-    "tanstack-table",
-    "shadcn-table",
-    "tablecn",
+    "dog sitting",
+    "pet care",
+    "bookings",
+    "small business",
+    "revenue tracking",
   ],
-  authors: [
-    {
-      name: "sadmann7",
-      url: "https://www.sadmn.com",
-    },
-  ],
-  creator: "sadmann7",
   openGraph: {
     type: "website",
     locale: "en_US",
@@ -46,8 +36,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: siteConfig.name,
     description: siteConfig.description,
-    images: [`${siteConfig.url}/og.jpg`],
-    creator: "@sadmann17",
+    images: [`${siteConfig.url}/opengraph-image.png`],
   },
   icons: {
     icon: "/icon.png",
@@ -73,11 +62,6 @@ export default function RootLayout({ children }: React.PropsWithChildren) {
           fontMono.variable,
         )}
       >
-        <Script
-          defer
-          data-site-id={siteConfig.url}
-          src="https://assets.onedollarstats.com/stonks.js"
-        />
         <ThemeProvider
           attribute="class"
           defaultTheme="system"

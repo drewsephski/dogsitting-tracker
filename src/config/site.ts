@@ -1,8 +1,8 @@
 export type SiteConfig = typeof siteConfig;
 
 export const siteConfig = {
-  name: "Table",
+  name: "Dog Sit",
   description:
-    "Shadcn table with server side sorting, pagination, and filtering",
+    "Track dog-sitting bookings, clients, revenue, and income goals—with an AI assistant for natural-language updates.",
   url: "https://tablecn.com",
 };

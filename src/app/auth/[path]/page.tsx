@@ -2,7 +2,6 @@ import { AuthView } from "@neondatabase/auth-ui";
 import { authViewPaths } from "@neondatabase/auth-ui/server";
 import { redirect } from "next/navigation";
 import { connection } from "next/server";
-import { RedirectIfAuthenticated } from "@/components/auth/redirect-if-authenticated";
 import { resolveRedirectTo } from "@/lib/auth/redirect-to";
 import { auth } from "@/lib/auth/server";
 
@@ -42,7 +41,6 @@ export default async function AuthPage({
 
   return (
     <div className="container flex min-h-[calc(100dvh-3.5rem)] items-center justify-center py-10">
-      <RedirectIfAuthenticated path={path} />
       <div className="w-full max-w-md">
         <AuthView path={path} />
       </div>
