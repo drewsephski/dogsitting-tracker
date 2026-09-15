@@ -36,6 +36,12 @@ export function SiteHeader() {
           >
             Clients
           </Link>
+          <Link
+            href="/chat"
+            className="text-foreground/60 transition-colors hover:text-foreground"
+          >
+            Chat
+          </Link>
         </nav>
         <div className="flex items-center justify-end">
           <ModeToggle />

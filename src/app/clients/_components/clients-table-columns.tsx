@@ -4,6 +4,7 @@ import type { ColumnDef } from "@tanstack/react-table";
 import { Ellipsis, Repeat, Text } from "lucide-react";
 import type * as React from "react";
 import { DataTableColumnHeader } from "@/components/data-table/data-table-column-header";
+import { InlineEditableTextCell } from "@/components/data-table/data-table-inline-editable";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -16,6 +17,7 @@ import {
 import { formatCurrency } from "@/lib/format";
 import type { DataTableRowAction } from "@/types/data-table";
 
+import { patchClientAction } from "../_lib/actions";
 import type { ClientTableRow } from "../_lib/queries";
 
 interface GetClientsTableColumnsProps {
@@ -25,9 +27,12 @@ interface GetClientsTableColumnsProps {
   >;
 }
 
-function formatOptionalText(value: string | null | undefined) {
-  if (!value?.trim()) return "—";
-  return value;
+async function saveClientPatch(
+  id: string,
+  patch: Record<string, unknown>,
+): Promise<{ error: string | null }> {
+  const result = await patchClientAction({ id, ...patch });
+  return { error: result.error };
 }
 
 export function getClientsTableColumns({
@@ -42,7 +47,12 @@ export function getClientsTableColumns({
         <DataTableColumnHeader column={column} title="Dog" />
       ),
       cell: ({ row }) => (
-        <div className="font-medium">{row.getValue("dogName")}</div>
+        <InlineEditableTextCell
+          value={row.original.dogName}
+          ariaLabel="Dog name"
+          className="font-medium"
+          onSave={(dogName) => saveClientPatch(row.original.id, { dogName })}
+        />
       ),
       meta: {
         label: "Dog",
@@ -58,7 +68,17 @@ export function getClientsTableColumns({
       header: ({ column }) => (
         <DataTableColumnHeader column={column} title="Owner" />
       ),
-      cell: ({ row }) => formatOptionalText(row.original.ownerName),
+      cell: ({ row }) => (
+        <InlineEditableTextCell
+          value={row.original.ownerName}
+          ariaLabel="Owner name"
+          onSave={(ownerName) =>
+            saveClientPatch(row.original.id, {
+              ownerName: ownerName.trim() ? ownerName : null,
+            })
+          }
+        />
+      ),
       meta: {
         label: "Owner",
       },
@@ -70,9 +90,16 @@ export function getClientsTableColumns({
         <DataTableColumnHeader column={column} title="Email" />
       ),
       cell: ({ row }) => (
-        <span className="text-muted-foreground">
-          {formatOptionalText(row.original.contactEmail)}
-        </span>
+        <InlineEditableTextCell
+          value={row.original.contactEmail}
+          ariaLabel="Contact email"
+          className="text-muted-foreground"
+          onSave={(contactEmail) =>
+            saveClientPatch(row.original.id, {
+              contactEmail: contactEmail.trim() ? contactEmail : null,
+            })
+          }
+        />
       ),
       meta: {
         label: "Email",
@@ -84,7 +111,17 @@ export function getClientsTableColumns({
       header: ({ column }) => (
         <DataTableColumnHeader column={column} title="Phone" />
       ),
-      cell: ({ row }) => formatOptionalText(row.original.contactPhone),
+      cell: ({ row }) => (
+        <InlineEditableTextCell
+          value={row.original.contactPhone}
+          ariaLabel="Contact phone"
+          onSave={(contactPhone) =>
+            saveClientPatch(row.original.id, {
+              contactPhone: contactPhone.trim() ? contactPhone : null,
+            })
+          }
+        />
+      ),
       meta: {
         label: "Phone",
       },

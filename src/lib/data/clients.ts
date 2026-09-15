@@ -80,6 +80,48 @@ export async function getClientById(
   return mergeClientStats([client], statsByClientId)[0] ?? null;
 }
 
+export type ClientPatch = {
+  dogName?: string;
+  ownerName?: string | null;
+  contactEmail?: string | null;
+  contactPhone?: string | null;
+};
+
+export async function patchClient(id: string, patch: ClientPatch) {
+  const existing = await db
+    .select()
+    .from(clients)
+    .where(eq(clients.id, id))
+    .then((rows) => rows[0]);
+
+  if (!existing) return null;
+
+  const merged = clientInputSchema.parse({
+    id,
+    dogName: patch.dogName ?? existing.dogName,
+    ownerName:
+      patch.ownerName !== undefined
+        ? patch.ownerName?.trim()
+          ? patch.ownerName.trim()
+          : undefined
+        : (existing.ownerName ?? undefined),
+    contactEmail:
+      patch.contactEmail !== undefined
+        ? patch.contactEmail?.trim()
+          ? patch.contactEmail.trim()
+          : ""
+        : (existing.contactEmail ?? ""),
+    contactPhone:
+      patch.contactPhone !== undefined
+        ? patch.contactPhone?.trim()
+          ? patch.contactPhone.trim()
+          : undefined
+        : (existing.contactPhone ?? undefined),
+  });
+
+  return upsertClient(merged);
+}
+
 export async function upsertClient(input: ClientInput) {
   const data = clientInputSchema.parse(input);
 

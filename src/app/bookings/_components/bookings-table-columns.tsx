@@ -4,7 +4,11 @@ import type { ColumnDef } from "@tanstack/react-table";
 import { CalendarIcon, CircleDashed, Dog, Ellipsis, Text } from "lucide-react";
 import type * as React from "react";
 import { DataTableColumnHeader } from "@/components/data-table/data-table-column-header";
-import { Badge } from "@/components/ui/badge";
+import {
+  InlineEditableDatetimeCell,
+  InlineEditableNumberCell,
+  InlineEditableSelectCell,
+} from "@/components/data-table/data-table-inline-editable";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -13,13 +17,19 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import type { BookingStatus, ServiceType } from "@/lib/definitions";
+import {
+  type BookingStatus,
+  bookingStatuses,
+  type ServiceType,
+  serviceTypes,
+} from "@/lib/definitions";
 import type { DataTableRowAction } from "@/types/data-table";
 
+import { patchBookingAction } from "../_lib/actions";
 import {
-  formatBookingDateTime,
   formatCurrency,
   formatOptionalNumber,
+  toDatetimeLocalValue,
 } from "../_lib/datetime";
 import type { BookingTableRow } from "../_lib/queries";
 
@@ -29,6 +39,14 @@ interface GetBookingsTableColumnsProps {
   setRowAction: React.Dispatch<
     React.SetStateAction<DataTableRowAction<BookingTableRow> | null>
   >;
+}
+
+async function saveBookingPatch(
+  id: string,
+  patch: Record<string, unknown>,
+): Promise<{ error: string | null }> {
+  const result = await patchBookingAction({ id, ...patch });
+  return { error: result.error };
 }
 
 export function getBookingsTableColumns({
@@ -61,9 +79,17 @@ export function getBookingsTableColumns({
         <DataTableColumnHeader column={column} title="Service" />
       ),
       cell: ({ row }) => (
-        <Badge variant="outline" className="capitalize">
-          {row.getValue("serviceType")}
-        </Badge>
+        <InlineEditableSelectCell
+          value={row.original.serviceType}
+          ariaLabel="Service type"
+          options={serviceTypes.map((value) => ({
+            value,
+            label: value,
+          }))}
+          onSave={(serviceType) =>
+            saveBookingPatch(row.original.id, { serviceType })
+          }
+        />
       ),
       meta: {
         label: "Service",
@@ -83,7 +109,14 @@ export function getBookingsTableColumns({
       header: ({ column }) => (
         <DataTableColumnHeader column={column} title="Start" />
       ),
-      cell: ({ row }) => formatBookingDateTime(row.original.startAt),
+      cell: ({ row }) => (
+        <InlineEditableDatetimeCell
+          value={row.original.startAt}
+          toInputValue={toDatetimeLocalValue}
+          ariaLabel="Start date and time"
+          onSave={(startAt) => saveBookingPatch(row.original.id, { startAt })}
+        />
+      ),
       meta: {
         label: "Start",
         variant: "date",
@@ -96,7 +129,14 @@ export function getBookingsTableColumns({
       header: ({ column }) => (
         <DataTableColumnHeader column={column} title="End" />
       ),
-      cell: ({ row }) => formatBookingDateTime(row.original.endAt),
+      cell: ({ row }) => (
+        <InlineEditableDatetimeCell
+          value={row.original.endAt}
+          toInputValue={toDatetimeLocalValue}
+          ariaLabel="End date and time"
+          onSave={(endAt) => saveBookingPatch(row.original.id, { endAt })}
+        />
+      ),
       meta: {
         label: "End",
         variant: "date",
@@ -109,7 +149,16 @@ export function getBookingsTableColumns({
       header: ({ column }) => (
         <DataTableColumnHeader column={column} title="Nights" />
       ),
-      cell: ({ row }) => formatOptionalNumber(row.original.nights),
+      cell: ({ row }) => (
+        <InlineEditableNumberCell
+          value={row.original.nights}
+          ariaLabel="Nights"
+          step="1"
+          inputMode="numeric"
+          formatDisplay={formatOptionalNumber}
+          onSave={(nights) => saveBookingPatch(row.original.id, { nights })}
+        />
+      ),
       meta: {
         label: "Nights",
       },
@@ -120,7 +169,18 @@ export function getBookingsTableColumns({
       header: ({ column }) => (
         <DataTableColumnHeader column={column} title="Days" />
       ),
-      cell: ({ row }) => formatOptionalNumber(row.original.calendarDays),
+      cell: ({ row }) => (
+        <InlineEditableNumberCell
+          value={row.original.calendarDays}
+          ariaLabel="Calendar days"
+          step="1"
+          inputMode="numeric"
+          formatDisplay={formatOptionalNumber}
+          onSave={(calendarDays) =>
+            saveBookingPatch(row.original.id, { calendarDays })
+          }
+        />
+      ),
       meta: {
         label: "Days",
       },
@@ -131,7 +191,18 @@ export function getBookingsTableColumns({
       header: ({ column }) => (
         <DataTableColumnHeader column={column} title="Hours" />
       ),
-      cell: ({ row }) => formatOptionalNumber(row.original.careHours),
+      cell: ({ row }) => (
+        <InlineEditableNumberCell
+          value={row.original.careHours}
+          ariaLabel="Care hours"
+          step="0.25"
+          inputMode="decimal"
+          formatDisplay={formatOptionalNumber}
+          onSave={(careHours) =>
+            saveBookingPatch(row.original.id, { careHours })
+          }
+        />
+      ),
       meta: {
         label: "Hours",
       },
@@ -142,7 +213,24 @@ export function getBookingsTableColumns({
       header: ({ column }) => (
         <DataTableColumnHeader column={column} title="Revenue" />
       ),
-      cell: ({ row }) => formatCurrency(row.original.revenue),
+      cell: ({ row }) => (
+        <InlineEditableNumberCell
+          value={row.original.revenue}
+          ariaLabel="Revenue"
+          step="0.01"
+          inputMode="decimal"
+          allowEmpty={false}
+          formatDisplay={(value) =>
+            value == null ? "—" : formatCurrency(value)
+          }
+          onSave={(revenue) => {
+            if (revenue == null) {
+              return Promise.resolve({ error: "Revenue is required" });
+            }
+            return saveBookingPatch(row.original.id, { revenue });
+          }}
+        />
+      ),
       meta: {
         label: "Revenue",
       },
@@ -154,9 +242,15 @@ export function getBookingsTableColumns({
         <DataTableColumnHeader column={column} title="Status" />
       ),
       cell: ({ row }) => (
-        <Badge variant="secondary" className="capitalize">
-          {row.getValue("status")}
-        </Badge>
+        <InlineEditableSelectCell
+          value={row.original.status}
+          ariaLabel="Booking status"
+          options={bookingStatuses.map((value) => ({
+            value,
+            label: value,
+          }))}
+          onSave={(status) => saveBookingPatch(row.original.id, { status })}
+        />
       ),
       meta: {
         label: "Status",

@@ -81,6 +81,28 @@ export const bookingFormSchema = z
 
 export type BookingFormSchema = z.infer<typeof bookingFormSchema>;
 
+export const bookingPatchSchema = z
+  .object({
+    id: z.string().min(1),
+    nights: z.number().int().nonnegative().nullable().optional(),
+    calendarDays: z.number().int().positive().nullable().optional(),
+    careHours: z.number().nonnegative().nullable().optional(),
+    revenue: z.number().nonnegative().optional(),
+    serviceType: serviceTypeSchema.optional(),
+    status: bookingStatusSchema.optional(),
+    startAt: z.string().min(1).optional(),
+    endAt: z.string().min(1).optional(),
+  })
+  .refine(
+    (data) => {
+      if (!data.startAt || !data.endAt) return true;
+      return new Date(data.endAt) > new Date(data.startAt);
+    },
+    { message: "End must be after start", path: ["endAt"] },
+  );
+
+export type BookingPatchSchema = z.infer<typeof bookingPatchSchema>;
+
 export function parseBookingFormInput(data: BookingFormSchema): BookingInput {
   return bookingInputSchema.parse({
     clientId: data.clientId,

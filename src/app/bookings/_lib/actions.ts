@@ -4,11 +4,16 @@ import { revalidatePath } from "next/cache";
 import {
   createBooking,
   deleteBooking,
+  patchBooking,
   updateBooking,
 } from "@/lib/data/bookings";
 import { getErrorMessage } from "@/lib/handle-error";
 
-import { bookingFormSchema, parseBookingFormInput } from "./validations";
+import {
+  bookingFormSchema,
+  bookingPatchSchema,
+  parseBookingFormInput,
+} from "./validations";
 
 const BOOKINGS_PATH = "/bookings";
 const CLIENTS_PATH = "/clients";
@@ -36,6 +41,25 @@ export async function updateBookingAction(input: unknown & { id: string }) {
     const { id, ...rest } = input;
     const formData = bookingFormSchema.parse(rest);
     const updated = await updateBooking(id, parseBookingFormInput(formData));
+    if (!updated) {
+      return { data: null, error: "Booking not found" };
+    }
+    revalidateBookingViews();
+    return { data: null, error: null };
+  } catch (err) {
+    return { data: null, error: getErrorMessage(err) };
+  }
+}
+
+export async function patchBookingAction(input: unknown) {
+  try {
+    const data = bookingPatchSchema.parse(input);
+    const { id, startAt, endAt, ...rest } = data;
+    const updated = await patchBooking(id, {
+      ...rest,
+      startAt: startAt ? new Date(startAt) : undefined,
+      endAt: endAt ? new Date(endAt) : undefined,
+    });
     if (!updated) {
       return { data: null, error: "Booking not found" };
     }

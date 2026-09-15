@@ -1,10 +1,14 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { deleteClient, upsertClient } from "@/lib/data/clients";
+import { deleteClient, patchClient, upsertClient } from "@/lib/data/clients";
 import { getErrorMessage } from "@/lib/handle-error";
 
-import { clientFormSchema, parseClientFormInput } from "./validations";
+import {
+  clientFormSchema,
+  clientPatchSchema,
+  parseClientFormInput,
+} from "./validations";
 
 const CLIENTS_PATH = "/clients";
 const BOOKINGS_PATH = "/bookings";
@@ -32,6 +36,20 @@ export async function updateClientAction(input: unknown & { id: string }) {
     const { id, ...rest } = input;
     const formData = clientFormSchema.parse(rest);
     const updated = await upsertClient(parseClientFormInput(formData, id));
+    if (!updated) {
+      return { data: null, error: "Client not found" };
+    }
+    revalidateClientViews();
+    return { data: null, error: null };
+  } catch (err) {
+    return { data: null, error: getErrorMessage(err) };
+  }
+}
+
+export async function patchClientAction(input: unknown) {
+  try {
+    const { id, ...patch } = clientPatchSchema.parse(input);
+    const updated = await patchClient(id, patch);
     if (!updated) {
       return { data: null, error: "Client not found" };
     }

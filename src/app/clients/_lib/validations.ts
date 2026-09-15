@@ -5,7 +5,7 @@ import {
   parseAsString,
   parseAsStringLiteral,
 } from "nuqs/server";
-import type * as z from "zod";
+import * as z from "zod";
 import { type ClientWithStats, clientInputSchema } from "@/lib/definitions";
 import { getSortingStateParser } from "@/lib/parsers";
 
@@ -28,6 +28,22 @@ export type GetClientsSchema = Awaited<
 export const clientFormSchema = clientInputSchema.omit({ id: true });
 
 export type ClientFormSchema = z.infer<typeof clientFormSchema>;
+
+export const clientPatchSchema = z.object({
+  id: z.string().min(1),
+  dogName: z.string().min(1).max(128).optional(),
+  ownerName: z.string().max(128).nullable().optional(),
+  contactEmail: z
+    .string()
+    .email()
+    .max(256)
+    .nullable()
+    .optional()
+    .or(z.literal("")),
+  contactPhone: z.string().max(32).nullable().optional(),
+});
+
+export type ClientPatchSchema = z.infer<typeof clientPatchSchema>;
 
 export function parseClientFormInput(data: ClientFormSchema, id?: string) {
   return clientInputSchema.parse({

@@ -86,6 +86,56 @@ export async function updateBooking(id: string, input: BookingInput) {
   return updated ?? null;
 }
 
+export type BookingPatch = {
+  nights?: number | null;
+  calendarDays?: number | null;
+  careHours?: number | null;
+  revenue?: number;
+  serviceType?: BookingInput["serviceType"];
+  status?: NonNullable<BookingInput["status"]>;
+  startAt?: Date;
+  endAt?: Date;
+};
+
+export async function patchBooking(id: string, patch: BookingPatch) {
+  const existing = await getBookingById(id);
+  if (!existing) return null;
+
+  const startAt = patch.startAt ?? existing.startAt;
+  const endAt = patch.endAt ?? existing.endAt;
+
+  if (endAt <= startAt) {
+    throw new Error("End must be after start");
+  }
+
+  const updates: Partial<typeof bookings.$inferInsert> = {};
+
+  if (patch.nights !== undefined) updates.nights = patch.nights;
+  if (patch.calendarDays !== undefined) {
+    updates.calendarDays = patch.calendarDays;
+  }
+  if (patch.careHours !== undefined) updates.careHours = patch.careHours;
+  if (patch.revenue !== undefined) updates.revenue = patch.revenue;
+  if (patch.serviceType !== undefined) {
+    updates.serviceType = patch.serviceType;
+  }
+  if (patch.status !== undefined) updates.status = patch.status;
+  if (patch.startAt !== undefined) updates.startAt = patch.startAt;
+  if (patch.endAt !== undefined) updates.endAt = patch.endAt;
+
+  if (Object.keys(updates).length === 0) {
+    return existing;
+  }
+
+  const [updated] = await db
+    .update(bookings)
+    .set(updates)
+    .where(eq(bookings.id, id))
+    .returning();
+
+  return updated ?? null;
+}
+
 export async function deleteBooking(id: string) {
   const [deleted] = await db
     .delete(bookings)
