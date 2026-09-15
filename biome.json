@@ -84,7 +84,8 @@
       "!**/build",
       "!**/public",
       "!**/.turbo",
-      "!**/.next"
+      "!**/.next",
+      "!**/.agents"
     ]
   }
 }

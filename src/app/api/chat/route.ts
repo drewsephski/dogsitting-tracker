@@ -7,6 +7,7 @@ import {
   toUIMessageStream,
 } from "ai";
 import { env } from "@/env.js";
+import { chatPostBodySchema } from "@/lib/chat/request";
 import { CHAT_SYSTEM_PROMPT } from "@/lib/chat/system-prompt";
 import type { ChatMessage } from "@/lib/chat/tools";
 import { chatTools } from "@/lib/chat/tools";
@@ -17,40 +18,46 @@ const openrouter = createOpenRouter({
   apiKey: env.OPENROUTER_API_KEY,
 });
 
+function jsonError(message: string, status: number) {
+  return Response.json({ error: message }, { status });
+}
+
 export async function POST(req: Request) {
-  const raw = await req.text();
-  if (!raw.trim()) {
-    return Response.json({ error: "Request body is empty" }, { status: 400 });
+  let body: unknown;
+  try {
+    body = await req.json();
+  } catch {
+    return jsonError("Request body is not valid JSON", 400);
   }
 
-  let messages: ChatMessage[];
+  const parsed = chatPostBodySchema.safeParse(body);
+  if (!parsed.success) {
+    const message =
+      parsed.error.issues[0]?.message ?? "Invalid request payload";
+    return jsonError(message, 400);
+  }
+
+  const messages = parsed.data.messages as ChatMessage[];
+
   try {
-    const body = JSON.parse(raw) as { messages?: ChatMessage[] };
-    if (!body.messages || !Array.isArray(body.messages)) {
-      return Response.json(
-        { error: "Request body must include a messages array" },
-        { status: 400 },
-      );
-    }
-    messages = body.messages;
-  } catch {
-    return Response.json(
-      { error: "Request body is not valid JSON" },
-      {
-        status: 400,
-      },
+    const result = streamText({
+      model: openrouter(env.OPENROUTER_MODEL),
+      system: CHAT_SYSTEM_PROMPT,
+      messages: await convertToModelMessages(messages, { tools: chatTools }),
+      tools: chatTools,
+      stopWhen: isStepCount(12),
+    });
+
+    return createUIMessageStreamResponse({
+      stream: toUIMessageStream({ stream: result.stream }),
+    });
+  } catch (error) {
+    console.error("Chat stream failed:", {
+      message: error instanceof Error ? error.message : "Unknown error",
+    });
+    return jsonError(
+      "Unable to process your message right now. Please try again.",
+      500,
     );
   }
-
-  const result = streamText({
-    model: openrouter(env.OPENROUTER_MODEL),
-    system: CHAT_SYSTEM_PROMPT,
-    messages: await convertToModelMessages(messages, { tools: chatTools }),
-    tools: chatTools,
-    stopWhen: isStepCount(12),
-  });
-
-  return createUIMessageStreamResponse({
-    stream: toUIMessageStream({ stream: result.stream }),
-  });
 }
